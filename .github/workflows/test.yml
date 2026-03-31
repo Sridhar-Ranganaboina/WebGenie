@@ -1,0 +1,141 @@
+name: Tests
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+    paths:
+      - .github/workflows/test.yml
+      - packages/browseros-agent/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BROWSEROS_APPIMAGE_URL: https://files.browseros.com/download/BrowserOS.AppImage
+
+jobs:
+  test:
+    name: Tests / ${{ matrix.suite }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: packages/browseros-agent
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: tools
+            test_path: tests/tools
+            junit_path: test-results/tools.xml
+          - suite: integration
+            test_path: tests/server.integration.test.ts
+            junit_path: test-results/integration.xml
+          - suite: sdk
+            test_path: tests/sdk
+            junit_path: test-results/sdk.xml
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun ci
+
+      - name: Resolve BrowserOS cache key
+        id: browseros-cache-key
+        run: |
+          set -euo pipefail
+          headers="$(curl -fsSI "$BROWSEROS_APPIMAGE_URL")"
+          etag="$(printf '%s\n' "$headers" | awk 'BEGIN{IGNORECASE=1} /^etag:/ {sub(/\r$/, "", $2); gsub(/"/, "", $2); print $2; exit}')"
+          last_modified="$(printf '%s\n' "$headers" | awk 'BEGIN{IGNORECASE=1} /^last-modified:/ {$1=""; sub(/^ /, ""); sub(/\r$/, ""); print; exit}')"
+          raw_key="${etag:-$last_modified}"
+          if [ -z "$raw_key" ]; then
+            raw_key="$BROWSEROS_APPIMAGE_URL"
+          fi
+          cache_key="$(printf '%s' "$raw_key" | shasum -a 256 | awk '{print $1}')"
+          echo "key=browseros-appimage-${{ runner.os }}-$cache_key" >> "$GITHUB_OUTPUT"
+
+      - name: Restore BrowserOS cache
+        id: browseros-cache
+        uses: actions/cache@v4
+        with:
+          path: packages/browseros-agent/.ci/bin/BrowserOS.AppImage
+          key: ${{ steps.browseros-cache-key.outputs.key }}
+
+      - name: Download BrowserOS
+        if: steps.browseros-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p .ci/bin
+          curl -fsSL "$BROWSEROS_APPIMAGE_URL" -o .ci/bin/BrowserOS.AppImage
+          chmod +x .ci/bin/BrowserOS.AppImage
+
+      - name: Prepare BrowserOS wrapper
+        run: |
+          mkdir -p .ci/bin
+          cat > .ci/bin/browseros <<'EOF'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          export APPIMAGE_EXTRACT_AND_RUN=1
+          exec "$(dirname "$0")/BrowserOS.AppImage" "$@"
+          EOF
+          chmod +x .ci/bin/browseros
+
+      - name: Create server env file
+        working-directory: packages/browseros-agent/apps/server
+        run: cp .env.example .env.development
+
+      - name: Run ${{ matrix.suite }} tests
+        id: test
+        env:
+          BROWSEROS_BINARY: ${{ github.workspace }}/packages/browseros-agent/.ci/bin/browseros
+          BROWSEROS_TEST_HEADLESS: "true"
+          BROWSEROS_TEST_EXTRA_ARGS: --no-sandbox --disable-dev-shm-usage
+        run: |
+          set +e
+          mkdir -p test-results
+          cd apps/server
+          bun run test:cleanup
+          bun --env-file=.env.development test "${{ matrix.test_path }}" --reporter=junit --reporter-outfile="../../${{ matrix.junit_path }}"
+          exit_code=$?
+          cd ../..
+          if [ ! -f "${{ matrix.junit_path }}" ]; then
+            cat > "${{ matrix.junit_path }}" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <testsuites tests="1" failures="1">
+            <testsuite name="${{ matrix.suite }}" tests="1" failures="1">
+              <testcase classname="workflow" name="${{ matrix.suite }} setup">
+                <failure message="Test run failed before JUnit output was written">See workflow logs for details.</failure>
+              </testcase>
+            </testsuite>
+          </testsuites>
+          EOF
+          fi
+          echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
+
+      - name: Upload JUnit XML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-${{ matrix.suite }}
+          path: packages/browseros-agent/${{ matrix.junit_path }}
+
+      - name: Summarize suite result
+        if: always()
+        run: |
+          if [ "${{ steps.test.outputs.exit_code }}" = "0" ]; then
+            echo "### :white_check_mark: ${{ matrix.suite }} suite passed" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### :x: ${{ matrix.suite }} suite failed (exit code ${{ steps.test.outputs.exit_code }})" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "See the uploaded \`junit-${{ matrix.suite }}\` artifact for details." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
