@@ -97,7 +97,10 @@ export class TabManager {
       tabId,
       url: tab?.url ?? '',
       title: tab?.title ?? '',
-      frames: populated.map((f) => f.snapshot!),
+      frames: populated.map((f) => ({
+        ...f.snapshot!,
+        parentFrameId: f.parentFrameId,
+      })),
       timestamp: Date.now(),
     }
   }

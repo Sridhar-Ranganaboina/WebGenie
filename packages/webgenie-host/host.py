@@ -107,8 +107,12 @@ class NativeHost:
             # Extension responded to a browser command
             result_id = payload.get("id", msg_id)
             with self._lock:
-                self._pending_results[result_id] = payload
                 ev = self._result_events.get(result_id)
+                if ev:
+                    # Only store if someone is waiting; otherwise discard to avoid memory leak
+                    self._pending_results[result_id] = payload
+                else:
+                    logger.warning("Received ACTION_RESULT for unknown cmd_id=%s (timed out?)", result_id)
             if ev:
                 ev.set()
             return

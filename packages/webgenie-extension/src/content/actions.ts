@@ -212,7 +212,7 @@ function doScroll(
   if (target instanceof Window) {
     target.scrollBy(scrollOptions)
   } else {
-    target.scrollBy(scrollOptions)
+    (target as HTMLElement).scrollBy(scrollOptions)
   }
 
   return { success: true }

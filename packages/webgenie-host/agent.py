@@ -142,7 +142,8 @@ class Agent:
                 tool_name = fn.get("name", "")
                 try:
                     args = json.loads(fn.get("arguments", "{}"))
-                except json.JSONDecodeError:
+                except json.JSONDecodeError as exc:
+                    logger.warning("Failed to parse tool arguments for %s: %s", tool_name, exc)
                     args = {}
 
                 yield {"type": "tool_call", "tool": tool_name, "args": args}
