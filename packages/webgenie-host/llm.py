@@ -144,14 +144,15 @@ class LLMClient:
             "anthropic-version": "2023-06-01",
         }
 
-        # Split system message out
-        system = ""
+        # Split system message out (concatenate all system messages)
+        system_parts: list[str] = []
         filtered = []
         for m in messages:
             if m["role"] == "system":
-                system = m["content"] if isinstance(m["content"], str) else str(m["content"])
+                system_parts.append(m["content"] if isinstance(m["content"], str) else str(m["content"]))
             else:
                 filtered.append(m)
+        system = "\n\n".join(system_parts)
 
         # Convert tool schema
         anthropic_tools = []

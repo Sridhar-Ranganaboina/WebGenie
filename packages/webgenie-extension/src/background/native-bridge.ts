@@ -3,7 +3,7 @@
  * Manages the persistent port to the native host process.
  */
 
-import type { NativeMessage, HostCommand } from '../types/messages'
+import type { HostCommand, NativeMessage } from '../types/messages'
 import { randomId } from './utils'
 
 const HOST_NAME = 'com.webgenie.host'
@@ -67,7 +67,11 @@ export class NativeBridge {
   /**
    * Send a message and wait for a response with the same ID.
    */
-  request(type: NativeMessage['type'], payload: unknown, timeoutMs = 30_000): Promise<NativeMessage> {
+  request(
+    type: NativeMessage['type'],
+    payload: unknown,
+    timeoutMs = 30_000,
+  ): Promise<NativeMessage> {
     return new Promise((resolve, reject) => {
       if (!this.port || !this.connected) {
         reject(new Error('Not connected to native host'))

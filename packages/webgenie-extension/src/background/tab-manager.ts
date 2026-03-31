@@ -29,7 +29,10 @@ export class TabManager {
       isLoading: tab.status === 'loading',
       isPinned: tab.pinned,
       index: tab.index,
-      groupId: tab.groupId !== undefined && tab.groupId !== chrome.tabGroups?.TAB_GROUP_ID_NONE ? tab.groupId : undefined,
+      groupId:
+        tab.groupId !== undefined && tab.groupId !== chrome.tabGroups?.TAB_GROUP_ID_NONE
+          ? tab.groupId
+          : undefined,
     })
   }
 
@@ -72,7 +75,13 @@ export class TabManager {
     if (entry) {
       entry.snapshot = snapshot
     } else {
-      this.frames.set(key, { frameId, tabId, url: snapshot.frameUrl, parentFrameId: null, snapshot })
+      this.frames.set(key, {
+        frameId,
+        tabId,
+        url: snapshot.frameUrl,
+        parentFrameId: null,
+        snapshot,
+      })
     }
   }
 

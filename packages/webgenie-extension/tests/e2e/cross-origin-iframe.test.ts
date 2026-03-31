@@ -12,9 +12,9 @@
  * 4. Frame identity (frameId, frameUrl) is correctly reported
  */
 
-import { test, expect, chromium, type BrowserContext, type Page } from '@playwright/test'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { type BrowserContext, chromium, expect, type Page, test } from '@playwright/test'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const EXTENSION_PATH = path.resolve(__dirname, '../../dist')
@@ -162,7 +162,9 @@ test.describe('Cross-origin iframe — frame enumeration', () => {
       for (const el of document.querySelectorAll('button, input')) {
         const rect = el.getBoundingClientRect()
         if (rect.width > 0 && rect.height > 0) {
-          els.push((el as HTMLElement).innerText?.trim() || (el as HTMLInputElement).placeholder || '')
+          els.push(
+            (el as HTMLElement).innerText?.trim() || (el as HTMLInputElement).placeholder || '',
+          )
         }
       }
       return els
@@ -337,7 +339,7 @@ test.describe('Cross-origin iframe — form automation scenario', () => {
               <input type='text' id='card-exp' placeholder='12/26' />
               <input type='text' id='card-cvc' placeholder='123' />
               <button id='pay-btn' onclick='document.getElementById(&quot;status&quot;).textContent=&quot;Payment submitted&quot;'>
-                Pay \$99.99
+                Pay $99.99
               </button>
               <p id='status'></p>
             </div>

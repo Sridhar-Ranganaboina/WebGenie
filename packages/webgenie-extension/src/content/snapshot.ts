@@ -6,20 +6,41 @@
 import type { SnapshotElement } from '../types/messages'
 
 const INTERACTIVE_ROLES = new Set([
-  'button', 'link', 'textbox', 'searchbox', 'textarea',
-  'checkbox', 'radio', 'combobox', 'menuitem', 'menuitemcheckbox',
-  'menuitemradio', 'tab', 'switch', 'slider', 'spinbutton',
-  'option', 'treeitem', 'listbox', 'DisclosureTriangle', 'gridcell',
+  'button',
+  'link',
+  'textbox',
+  'searchbox',
+  'textarea',
+  'checkbox',
+  'radio',
+  'combobox',
+  'menuitem',
+  'menuitemcheckbox',
+  'menuitemradio',
+  'tab',
+  'switch',
+  'slider',
+  'spinbutton',
+  'option',
+  'treeitem',
+  'listbox',
+  'DisclosureTriangle',
+  'gridcell',
 ])
 
 const NAMED_CONTENT_ROLES = new Set([
-  'heading', 'img', 'cell', 'columnheader', 'rowheader',
-  'dialog', 'alertdialog', 'alert', 'status',
+  'heading',
+  'img',
+  'cell',
+  'columnheader',
+  'rowheader',
+  'dialog',
+  'alertdialog',
+  'alert',
+  'status',
 ])
 
-const SKIP_ROLES = new Set([
-  'none', 'presentation', 'LineBreak', 'InlineTextBox', 'generic',
-])
+const SKIP_ROLES = new Set(['none', 'presentation', 'LineBreak', 'InlineTextBox', 'generic'])
 
 interface SimpleAXNode {
   nodeId: string
@@ -84,7 +105,11 @@ function formatLine(el: SnapshotElement): string {
   return line
 }
 
-function buildElement(node: SimpleAXNode, frameId: number, frameUrl: string): SnapshotElement | null {
+function buildElement(
+  node: SimpleAXNode,
+  frameId: number,
+  frameUrl: string,
+): SnapshotElement | null {
   const role = node.role
   if (!role || SKIP_ROLES.has(role)) return null
 
@@ -99,7 +124,7 @@ function buildElement(node: SimpleAXNode, frameId: number, frameUrl: string): Sn
 
   const props = node.properties
   return {
-    id: node.backendNodeId || (_nodeCounter++),
+    id: node.backendNodeId || _nodeCounter++,
     role,
     name: node.name,
     value: node.value || undefined,
@@ -113,7 +138,14 @@ function buildElement(node: SimpleAXNode, frameId: number, frameUrl: string): Sn
     frameId,
     frameUrl,
     tagName: node.domNode?.tagName?.toLowerCase(),
-    rect: rect ? { x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width), height: Math.round(rect.height) } : undefined,
+    rect: rect
+      ? {
+          x: Math.round(rect.x),
+          y: Math.round(rect.y),
+          width: Math.round(rect.width),
+          height: Math.round(rect.height),
+        }
+      : undefined,
   }
 }
 
@@ -124,13 +156,14 @@ function collectAxNodes(): SimpleAXNode[] {
   let id = 1
 
   for (const el of allElements) {
-    const axEl = (el as Element & { accessibilityProperties?: unknown })
+    const axEl = el as Element & { accessibilityProperties?: unknown }
     const role = el.getAttribute('role') || inferRole(el)
     if (!role) continue
 
     const name =
       el.getAttribute('aria-label') ||
-      el.getAttribute('aria-labelledby') && document.getElementById(el.getAttribute('aria-labelledby') || '')?.textContent?.trim() ||
+      (el.getAttribute('aria-labelledby') &&
+        document.getElementById(el.getAttribute('aria-labelledby') || '')?.textContent?.trim()) ||
       el.getAttribute('placeholder') ||
       el.getAttribute('alt') ||
       el.getAttribute('title') ||
@@ -138,10 +171,7 @@ function collectAxNodes(): SimpleAXNode[] {
       (el as HTMLElement).innerText?.trim().slice(0, 200) ||
       ''
 
-    const value =
-      (el as HTMLInputElement).value ||
-      el.getAttribute('aria-valuenow') ||
-      ''
+    const value = (el as HTMLInputElement).value || el.getAttribute('aria-valuenow') || ''
 
     const properties: Record<string, unknown> = {
       checked: (el as HTMLInputElement).checked || el.getAttribute('aria-checked') === 'true',
@@ -181,8 +211,12 @@ function inferRole(el: Element): string {
     button: 'button',
     select: 'combobox',
     textarea: 'textarea',
-    h1: 'heading', h2: 'heading', h3: 'heading',
-    h4: 'heading', h5: 'heading', h6: 'heading',
+    h1: 'heading',
+    h2: 'heading',
+    h3: 'heading',
+    h4: 'heading',
+    h5: 'heading',
+    h6: 'heading',
     img: 'img',
     dialog: 'dialog',
   }
@@ -215,12 +249,27 @@ function collectDomElements(): SnapshotElement[] {
   let id = 1
 
   const selectors = [
-    'a[href]', 'button', 'input', 'select', 'textarea',
-    '[role="button"]', '[role="link"]', '[role="textbox"]',
-    '[role="checkbox"]', '[role="radio"]', '[role="combobox"]',
-    '[role="tab"]', '[role="menuitem"]', '[role="option"]',
+    'a[href]',
+    'button',
+    'input',
+    'select',
+    'textarea',
+    '[role="button"]',
+    '[role="link"]',
+    '[role="textbox"]',
+    '[role="checkbox"]',
+    '[role="radio"]',
+    '[role="combobox"]',
+    '[role="tab"]',
+    '[role="menuitem"]',
+    '[role="option"]',
     '[tabindex]:not([tabindex="-1"])',
-    'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    'h1',
+    'h2',
+    'h3',
+    'h4',
+    'h5',
+    'h6',
   ]
 
   for (const selector of selectors) {
@@ -254,7 +303,12 @@ function collectDomElements(): SnapshotElement[] {
         frameId: 0,
         frameUrl: window.location.href,
         tagName: el.tagName.toLowerCase(),
-        rect: { x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width), height: Math.round(rect.height) },
+        rect: {
+          x: Math.round(rect.x),
+          y: Math.round(rect.y),
+          width: Math.round(rect.width),
+          height: Math.round(rect.height),
+        },
       })
     }
   }

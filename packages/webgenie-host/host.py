@@ -9,10 +9,12 @@ This process is launched by Chrome when the extension requests native messaging.
 """
 
 import json
+import logging
+import os
 import struct
 import sys
+import tempfile
 import threading
-import logging
 from typing import Any
 
 from agent import Agent
@@ -21,7 +23,10 @@ from tools import BrowserToolkit
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    handlers=[logging.FileHandler("/tmp/webgenie-host.log"), logging.StreamHandler(sys.stderr)],
+    handlers=[
+        logging.FileHandler(os.path.join(tempfile.gettempdir(), "webgenie-host.log")),
+        logging.StreamHandler(sys.stderr),
+    ],
 )
 logger = logging.getLogger("host")
 

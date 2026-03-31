@@ -3,9 +3,9 @@
  * Tests click, type, scroll, select, press_key and their effects on the DOM.
  */
 
-import { test, expect, chromium, type BrowserContext, type Page } from '@playwright/test'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { type BrowserContext, chromium, expect, type Page, test } from '@playwright/test'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const EXTENSION_PATH = path.resolve(__dirname, '../../dist')
@@ -153,7 +153,9 @@ test.describe('Actions — type', () => {
     await page.setContent(`<input id="el-1" type="text" />`)
 
     await execAction(page, { type: 'type', elementId: 1, text: 'hello world', append: false })
-    const value = await page.evaluate(() => (document.getElementById('el-1') as HTMLInputElement)?.value)
+    const value = await page.evaluate(
+      () => (document.getElementById('el-1') as HTMLInputElement)?.value,
+    )
     expect(value).toBe('hello world')
     await page.close()
   })
@@ -163,7 +165,9 @@ test.describe('Actions — type', () => {
     await page.setContent(`<input id="el-1" type="text" value="hello " />`)
 
     await execAction(page, { type: 'type', elementId: 1, text: 'world', append: true })
-    const value = await page.evaluate(() => (document.getElementById('el-1') as HTMLInputElement)?.value)
+    const value = await page.evaluate(
+      () => (document.getElementById('el-1') as HTMLInputElement)?.value,
+    )
     expect(value).toBe('hello world')
     await page.close()
   })
@@ -173,7 +177,9 @@ test.describe('Actions — type', () => {
     await page.setContent(`<input id="el-1" type="text" value="old text" />`)
 
     await execAction(page, { type: 'type', elementId: 1, text: 'new text', append: false })
-    const value = await page.evaluate(() => (document.getElementById('el-1') as HTMLInputElement)?.value)
+    const value = await page.evaluate(
+      () => (document.getElementById('el-1') as HTMLInputElement)?.value,
+    )
     expect(value).toBe('new text')
     await page.close()
   })
@@ -183,7 +189,9 @@ test.describe('Actions — type', () => {
     await page.setContent(`<input id="el-1" type="text" value="some content" />`)
 
     await execAction(page, { type: 'clear', elementId: 1 })
-    const value = await page.evaluate(() => (document.getElementById('el-1') as HTMLInputElement)?.value)
+    const value = await page.evaluate(
+      () => (document.getElementById('el-1') as HTMLInputElement)?.value,
+    )
     expect(value).toBe('')
     await page.close()
   })
@@ -200,7 +208,9 @@ test.describe('Actions — type', () => {
     `)
 
     await execAction(page, { type: 'type', elementId: 1, text: 'test', append: false })
-    const fired = await page.evaluate(() => (document.getElementById('el-1') as HTMLInputElement)?.dataset.inputFired)
+    const fired = await page.evaluate(
+      () => (document.getElementById('el-1') as HTMLInputElement)?.dataset.inputFired,
+    )
     expect(fired).toBe('yes')
     await page.close()
   })
@@ -228,7 +238,9 @@ test.describe('Actions — select option', () => {
     `)
 
     await execAction(page, { type: 'select_option', elementId: 1, value: 'b' })
-    const val = await page.evaluate(() => (document.getElementById('el-1') as HTMLSelectElement)?.value)
+    const val = await page.evaluate(
+      () => (document.getElementById('el-1') as HTMLSelectElement)?.value,
+    )
     expect(val).toBe('b')
     await page.close()
   })
@@ -243,7 +255,9 @@ test.describe('Actions — select option', () => {
     `)
 
     await execAction(page, { type: 'select_option', elementId: 1, value: 'United Kingdom' })
-    const val = await page.evaluate(() => (document.getElementById('el-1') as HTMLSelectElement)?.value)
+    const val = await page.evaluate(
+      () => (document.getElementById('el-1') as HTMLSelectElement)?.value,
+    )
     expect(val).toBe('uk')
     await page.close()
   })

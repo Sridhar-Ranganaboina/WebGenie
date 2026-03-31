@@ -6,9 +6,9 @@
  * captures element snapshots — including from cross-origin iframes.
  */
 
-import { test, expect, chromium, type BrowserContext } from '@playwright/test'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { type BrowserContext, chromium, expect, test } from '@playwright/test'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const EXTENSION_PATH = path.resolve(__dirname, '../../dist')
@@ -38,9 +38,20 @@ async function captureSnapshot(ctx: BrowserContext, url: string) {
 
   const elements = await page.evaluate(() => {
     const INTERACTIVE_ROLES = new Set([
-      'button', 'link', 'textbox', 'searchbox', 'textarea',
-      'checkbox', 'radio', 'combobox', 'menuitem', 'tab', 'switch',
-      'slider', 'option', 'listbox',
+      'button',
+      'link',
+      'textbox',
+      'searchbox',
+      'textarea',
+      'checkbox',
+      'radio',
+      'combobox',
+      'menuitem',
+      'tab',
+      'switch',
+      'slider',
+      'option',
+      'listbox',
     ])
 
     const results: Array<{ id: number; role: string; name: string }> = []
@@ -55,21 +66,33 @@ async function captureSnapshot(ctx: BrowserContext, url: string) {
       if (tag === 'textarea') return 'textarea'
       if (/^h[1-6]$/.test(tag)) return 'heading'
       if (tag === 'input') {
-        const m: Record<string, string> = { checkbox: 'checkbox', radio: 'radio', submit: 'button', text: 'textbox', search: 'searchbox', email: 'textbox', password: 'textbox' }
+        const m: Record<string, string> = {
+          checkbox: 'checkbox',
+          radio: 'radio',
+          submit: 'button',
+          text: 'textbox',
+          search: 'searchbox',
+          email: 'textbox',
+          password: 'textbox',
+        }
         return m[type || 'text'] || 'textbox'
       }
       return el.getAttribute('role') || ''
     }
 
-    for (const el of document.querySelectorAll('a[href], button, input, select, textarea, [role]')) {
+    for (const el of document.querySelectorAll(
+      'a[href], button, input, select, textarea, [role]',
+    )) {
       const role = el.getAttribute('role') || inferRole(el)
       if (!INTERACTIVE_ROLES.has(role)) continue
       const rect = el.getBoundingClientRect()
       if (rect.width === 0 && rect.height === 0) continue
-      const name = (el as HTMLElement).innerText?.trim().slice(0, 100) ||
+      const name =
+        (el as HTMLElement).innerText?.trim().slice(0, 100) ||
         el.getAttribute('aria-label') ||
         el.getAttribute('placeholder') ||
-        el.getAttribute('alt') || ''
+        el.getAttribute('alt') ||
+        ''
       if (!name) continue
       results.push({ id: id++, role, name })
     }
@@ -107,14 +130,19 @@ test.describe('Snapshot — basic HTML page', () => {
 
     const elements = await page.evaluate(() => {
       const results: Array<{ role: string; name: string }> = []
-      let id = 1
+      const id = 1
 
       for (const el of document.querySelectorAll('button, a[href], input')) {
         const rect = el.getBoundingClientRect()
         if (rect.width === 0 && rect.height === 0) continue
-        const role = el.tagName.toLowerCase() === 'a' ? 'link'
-          : el.tagName.toLowerCase() === 'button' ? 'button'
-          : (el as HTMLInputElement).type === 'text' ? 'textbox' : 'other'
+        const role =
+          el.tagName.toLowerCase() === 'a'
+            ? 'link'
+            : el.tagName.toLowerCase() === 'button'
+              ? 'button'
+              : (el as HTMLInputElement).type === 'text'
+                ? 'textbox'
+                : 'other'
         const name = (el as HTMLElement).innerText?.trim() || el.getAttribute('placeholder') || ''
         if (name) results.push({ role, name })
       }
@@ -243,7 +271,7 @@ test.describe('Snapshot — ARIA roles', () => {
       Array.from(document.querySelectorAll('[role=tab]')).map((el) => ({
         name: (el as HTMLElement).innerText.trim(),
         selected: el.getAttribute('aria-selected'),
-      }))
+      })),
     )
 
     expect(tabs).toHaveLength(3)

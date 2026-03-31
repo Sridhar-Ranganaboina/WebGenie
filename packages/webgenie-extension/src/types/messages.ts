@@ -15,7 +15,12 @@ export type AgentAction =
   | { type: 'clear'; elementId: number }
   | { type: 'press_key'; key: string; modifiers?: string[] }
   | { type: 'select_option'; elementId: number; value: string }
-  | { type: 'scroll'; direction: 'up' | 'down' | 'left' | 'right'; amount?: number; elementId?: number }
+  | {
+      type: 'scroll'
+      direction: 'up' | 'down' | 'left' | 'right'
+      amount?: number
+      elementId?: number
+    }
   | { type: 'scroll_to_element'; elementId: number }
   | { type: 'scroll_to_top' }
   | { type: 'scroll_to_bottom' }
@@ -62,9 +67,21 @@ export interface PageSnapshot {
 // ─── Content Script → Background ─────────────────────────────────────────────
 
 export type ContentToBackground =
-  | { kind: 'FRAME_SNAPSHOT'; frameId: number; frameUrl: string; parentFrameId: number | null; elements: SnapshotElement[]; rawText: string }
+  | {
+      kind: 'FRAME_SNAPSHOT'
+      frameId: number
+      frameUrl: string
+      parentFrameId: number | null
+      elements: SnapshotElement[]
+      rawText: string
+    }
   | { kind: 'ACTION_RESULT'; actionId: string; success: boolean; result?: unknown; error?: string }
-  | { kind: 'CONSOLE_LOG'; level: 'log' | 'warn' | 'error' | 'info'; message: string; timestamp: number }
+  | {
+      kind: 'CONSOLE_LOG'
+      level: 'log' | 'warn' | 'error' | 'info'
+      message: string
+      timestamp: number
+    }
   | { kind: 'FRAME_READY'; frameId: number; frameUrl: string }
   | { kind: 'EVALUATE_RESULT'; actionId: string; success: boolean; value?: unknown; error?: string }
 

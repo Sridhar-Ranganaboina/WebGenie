@@ -2,8 +2,8 @@
  * Build script: copies manifest, HTML, icons and compiled JS into dist/
  */
 
-import { copyFile, mkdir, readdir, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
+import { copyFile, mkdir, readdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
