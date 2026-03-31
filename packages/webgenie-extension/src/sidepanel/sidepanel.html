@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebGenie</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #0f0f12;
+        color: #e8e8f0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      #header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 16px;
+        border-bottom: 1px solid #22223a;
+        background: #15151f;
+        flex-shrink: 0;
+      }
+
+      #header .logo {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        background: linear-gradient(135deg, #6c63ff, #3ecfcf);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+      }
+
+      #header h1 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #fff;
+      }
+
+      #header .status {
+        margin-left: auto;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #ff4444;
+      }
+      #header .status.connected { background: #44ff88; }
+
+      #messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .message {
+        max-width: 90%;
+        padding: 10px 14px;
+        border-radius: 12px;
+        font-size: 13px;
+        line-height: 1.5;
+        word-break: break-word;
+      }
+
+      .message.user {
+        align-self: flex-end;
+        background: #6c63ff;
+        color: #fff;
+        border-bottom-right-radius: 4px;
+      }
+
+      .message.assistant {
+        align-self: flex-start;
+        background: #1e1e2e;
+        color: #e8e8f0;
+        border-bottom-left-radius: 4px;
+        border: 1px solid #2a2a3e;
+      }
+
+      .message.tool {
+        align-self: flex-start;
+        background: #12121c;
+        color: #888;
+        border: 1px dashed #2a2a3e;
+        font-size: 12px;
+        font-family: monospace;
+        border-bottom-left-radius: 4px;
+      }
+
+      .message.error {
+        align-self: flex-start;
+        background: #2a1515;
+        color: #ff7777;
+        border: 1px solid #441515;
+        border-bottom-left-radius: 4px;
+      }
+
+      .thinking {
+        align-self: flex-start;
+        display: flex;
+        gap: 4px;
+        padding: 10px 14px;
+      }
+
+      .thinking span {
+        width: 6px;
+        height: 6px;
+        background: #6c63ff;
+        border-radius: 50%;
+        animation: bounce 1.2s infinite;
+      }
+      .thinking span:nth-child(2) { animation-delay: 0.2s; }
+      .thinking span:nth-child(3) { animation-delay: 0.4s; }
+
+      @keyframes bounce {
+        0%, 60%, 100% { transform: translateY(0); }
+        30% { transform: translateY(-8px); }
+      }
+
+      #input-area {
+        padding: 12px 16px;
+        border-top: 1px solid #22223a;
+        background: #15151f;
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+        flex-shrink: 0;
+      }
+
+      #task-input {
+        flex: 1;
+        background: #0f0f18;
+        border: 1px solid #2a2a3e;
+        border-radius: 10px;
+        color: #e8e8f0;
+        font-size: 13px;
+        padding: 8px 12px;
+        resize: none;
+        outline: none;
+        max-height: 120px;
+        min-height: 38px;
+        font-family: inherit;
+        line-height: 1.4;
+      }
+
+      #task-input:focus { border-color: #6c63ff; }
+      #task-input::placeholder { color: #44445a; }
+
+      #send-btn {
+        background: #6c63ff;
+        border: none;
+        border-radius: 10px;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: background 0.15s;
+      }
+
+      #send-btn:hover { background: #7c72ff; }
+      #send-btn:disabled { background: #333; cursor: not-allowed; }
+
+      #send-btn svg {
+        width: 16px;
+        height: 16px;
+        fill: #fff;
+      }
+
+      #tabs-bar {
+        display: flex;
+        gap: 6px;
+        padding: 8px 16px;
+        overflow-x: auto;
+        border-bottom: 1px solid #22223a;
+        background: #15151f;
+        flex-shrink: 0;
+        scrollbar-width: none;
+      }
+
+      .tab-chip {
+        background: #1e1e2e;
+        border: 1px solid #2a2a3e;
+        border-radius: 6px;
+        padding: 3px 8px;
+        font-size: 11px;
+        color: #888;
+        cursor: pointer;
+        white-space: nowrap;
+        max-width: 120px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: background 0.1s;
+      }
+
+      .tab-chip:hover { background: #2a2a3e; color: #ccc; }
+      .tab-chip.active { border-color: #6c63ff; color: #aaa8ff; background: #1a1a2e; }
+    </style>
+  </head>
+  <body>
+    <div id="header">
+      <div class="logo">🧞</div>
+      <h1>WebGenie</h1>
+      <div class="status" id="status-dot"></div>
+    </div>
+
+    <div id="tabs-bar"></div>
+
+    <div id="messages"></div>
+
+    <div id="input-area">
+      <textarea
+        id="task-input"
+        placeholder="Ask me to do something in the browser…"
+        rows="1"
+      ></textarea>
+      <button id="send-btn" title="Send">
+        <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+      </button>
+    </div>
+
+    <script src="sidepanel.js"></script>
+  </body>
+</html>
