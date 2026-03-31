@@ -1,0 +1,9 @@
+{
+  "name": "com.webgenie.host",
+  "description": "WebGenie native messaging host — browser automation BRAIN",
+  "path": "/path/to/webgenie-host.sh",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://YOUR_EXTENSION_ID_HERE/"
+  ]
+}

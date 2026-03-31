@@ -1,0 +1,23 @@
+{
+  "name": "@webgenie/extension",
+  "version": "1.0.0",
+  "description": "WebGenie Chrome Extension — browser automation HANDS",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc && node scripts/build.mjs",
+    "build:watch": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src",
+    "lint:fix": "biome check --write --unsafe src",
+    "test": "vitest run",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.8",
+    "@playwright/test": "^1.50.0",
+    "@types/chrome": "^0.0.330",
+    "typescript": "^5.7.0",
+    "vitest": "^3.2.0"
+  }
+}
