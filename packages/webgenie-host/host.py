@@ -11,17 +11,21 @@ This process is launched by Chrome when the extension requests native messaging.
 import json
 import struct
 import sys
+import time
 import threading
 import logging
+from pathlib import Path
 from typing import Any
 
 from agent import Agent
 from tools import BrowserToolkit
 
+_log_dir = Path.home() / ".webgenie" / "logs"
+_log_dir.mkdir(parents=True, exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    handlers=[logging.FileHandler("/tmp/webgenie-host.log"), logging.StreamHandler(sys.stderr)],
+    handlers=[logging.FileHandler(_log_dir / "host.log"), logging.StreamHandler(sys.stderr)],
 )
 logger = logging.getLogger("host")
 
@@ -82,7 +86,7 @@ class NativeHost:
         logger.info("Received: %s (id=%s)", msg_type, msg_id)
 
         if msg_type == "PING":
-            send_message(make_response(msg_id, "PONG", {"time": __import__("time").time()}))
+            send_message(make_response(msg_id, "PONG", {"time": time.time()}))
             return
 
         if msg_type == "TASK_START":
@@ -154,6 +158,10 @@ class NativeHost:
 
 # ─── Entry point ─────────────────────────────────────────────────────────────
 
-if __name__ == "__main__":
+def main() -> None:
     host = NativeHost()
     host.run()
+
+
+if __name__ == "__main__":
+    main()

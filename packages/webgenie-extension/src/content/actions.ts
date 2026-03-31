@@ -2,8 +2,8 @@
  * DOM action executors — runs inside content scripts (any frame).
  */
 
-import { resolveElementById } from './snapshot'
 import type { AgentAction } from '../types/messages'
+import { resolveElementById } from './snapshot'
 
 export interface ActionResult {
   success: boolean
@@ -50,7 +50,11 @@ export async function executeAction(action: AgentAction): Promise<ActionResult> 
   }
 }
 
-async function doClick(elementId: number, button: string, clickCount: number): Promise<ActionResult> {
+async function doClick(
+  elementId: number,
+  button: string,
+  clickCount: number,
+): Promise<ActionResult> {
   const el = resolveElementById(elementId)
   if (!el) return { success: false, error: `Element [${elementId}] not found in this frame` }
 
@@ -66,9 +70,33 @@ async function doClick(elementId: number, button: string, clickCount: number): P
   const buttonNum = buttonMap[button] ?? 0
 
   for (let i = 0; i < clickCount; i++) {
-    el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, clientX: x, clientY: y, button: buttonNum }))
-    el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, clientX: x, clientY: y, button: buttonNum }))
-    el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: x, clientY: y, button: buttonNum }))
+    el.dispatchEvent(
+      new MouseEvent('mousedown', {
+        bubbles: true,
+        cancelable: true,
+        clientX: x,
+        clientY: y,
+        button: buttonNum,
+      }),
+    )
+    el.dispatchEvent(
+      new MouseEvent('mouseup', {
+        bubbles: true,
+        cancelable: true,
+        clientX: x,
+        clientY: y,
+        button: buttonNum,
+      }),
+    )
+    el.dispatchEvent(
+      new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        clientX: x,
+        clientY: y,
+        button: buttonNum,
+      }),
+    )
   }
 
   // Also call native click for real DOM interaction
@@ -85,9 +113,33 @@ function doClickAt(x: number, y: number, button: string, clickCount: number): Ac
   const el = document.elementFromPoint(x, y) ?? document.body
 
   for (let i = 0; i < clickCount; i++) {
-    el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, clientX: x, clientY: y, button: buttonNum }))
-    el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, clientX: x, clientY: y, button: buttonNum }))
-    el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: x, clientY: y, button: buttonNum }))
+    el.dispatchEvent(
+      new MouseEvent('mousedown', {
+        bubbles: true,
+        cancelable: true,
+        clientX: x,
+        clientY: y,
+        button: buttonNum,
+      }),
+    )
+    el.dispatchEvent(
+      new MouseEvent('mouseup', {
+        bubbles: true,
+        cancelable: true,
+        clientX: x,
+        clientY: y,
+        button: buttonNum,
+      }),
+    )
+    el.dispatchEvent(
+      new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        clientX: x,
+        clientY: y,
+        button: buttonNum,
+      }),
+    )
   }
 
   return { success: true }
@@ -102,9 +154,15 @@ function doHover(elementId: number): ActionResult {
   const x = rect.left + rect.width / 2
   const y = rect.top + rect.height / 2
 
-  el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, cancelable: true, clientX: x, clientY: y }))
-  el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: false, cancelable: false, clientX: x, clientY: y }))
-  el.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, cancelable: true, clientX: x, clientY: y }))
+  el.dispatchEvent(
+    new MouseEvent('mouseover', { bubbles: true, cancelable: true, clientX: x, clientY: y }),
+  )
+  el.dispatchEvent(
+    new MouseEvent('mouseenter', { bubbles: false, cancelable: false, clientX: x, clientY: y }),
+  )
+  el.dispatchEvent(
+    new MouseEvent('mousemove', { bubbles: true, cancelable: true, clientX: x, clientY: y }),
+  )
 
   return { success: true }
 }
@@ -119,7 +177,7 @@ function doType(elementId: number, text: string, append: boolean): ActionResult 
     if ('value' in el) {
       el.value = ''
     } else {
-      (el as HTMLElement).textContent = ''
+      ;(el as HTMLElement).textContent = ''
     }
   }
 
@@ -132,7 +190,7 @@ function doType(elementId: number, text: string, append: boolean): ActionResult 
       el.value += char
       el.dispatchEvent(new Event('input', { bubbles: true }))
     } else {
-      (el as HTMLElement).textContent = ((el as HTMLElement).textContent ?? '') + char
+      ;(el as HTMLElement).textContent = ((el as HTMLElement).textContent ?? '') + char
     }
 
     el.dispatchEvent(new KeyboardEvent('keyup', { key: char, bubbles: true }))
@@ -181,7 +239,7 @@ function doSelectOption(elementId: number, value: string): ActionResult {
 
   // Try matching by value, then by label
   const option = Array.from(el.options).find(
-    (o) => o.value === value || o.text === value || o.label === value
+    (o) => o.value === value || o.text === value || o.label === value,
   )
 
   if (!option) {
@@ -198,9 +256,7 @@ function doScroll(
   amount: number,
   elementId?: number,
 ): ActionResult {
-  const target: Element | Window = elementId
-    ? (resolveElementById(elementId) ?? window)
-    : window
+  const target: Element | Window = elementId ? (resolveElementById(elementId) ?? window) : window
 
   const scrollOptions: ScrollToOptions = { behavior: 'smooth' }
 
@@ -236,9 +292,12 @@ function doFocus(elementId: number): ActionResult {
 
 function doEvaluate(expression: string): ActionResult {
   try {
-    // biome-ignore lint/security/noEval: intentional script evaluation tool
+    // biome-ignore lint/security/noGlobalEval: intentional script evaluation tool
     const result = eval(expression) // eslint-disable-line no-eval
-    return { success: true, result: typeof result === 'object' ? JSON.parse(JSON.stringify(result)) : result }
+    return {
+      success: true,
+      result: typeof result === 'object' ? JSON.parse(JSON.stringify(result)) : result,
+    }
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : String(err) }
   }

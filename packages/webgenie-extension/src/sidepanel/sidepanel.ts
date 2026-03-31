@@ -34,9 +34,14 @@ function refreshTabs(): void {
   chrome.runtime.sendMessage({ kind: 'SIDEPANEL_GET_TABS' }, (response) => {
     if (chrome.runtime.lastError || !response?.tabs) return
     tabsBar.innerHTML = ''
-    for (const tab of response.tabs as Array<{ tabId: number; title: string; url: string; isActive: boolean }>) {
+    for (const tab of response.tabs as Array<{
+      tabId: number
+      title: string
+      url: string
+      isActive: boolean
+    }>) {
       const chip = document.createElement('div')
-      chip.className = 'tab-chip' + (tab.isActive ? ' active' : '')
+      chip.className = `tab-chip${tab.isActive ? ' active' : ''}`
       chip.title = tab.url
       chip.textContent = tab.title || tab.url
       chip.dataset.tabId = String(tab.tabId)

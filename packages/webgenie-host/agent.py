@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import threading
 from collections.abc import Generator
 from typing import Any, TYPE_CHECKING

@@ -9,10 +9,6 @@
  * cross-origin iframes are fully accessible — each runs its own snapshot/action.
  */
 
-import { NativeBridge } from './native-bridge'
-import { TabManager } from './tab-manager'
-import { ActionExecutor } from './action-executor'
-import { randomId } from './utils'
 import type {
   ContentToBackground,
   FrameSnapshot,
@@ -21,6 +17,9 @@ import type {
   TabInfo,
   WindowInfo,
 } from '../types/messages'
+import { ActionExecutor } from './action-executor'
+import { NativeBridge } from './native-bridge'
+import { TabManager } from './tab-manager'
 
 // ─── Singletons ───────────────────────────────────────────────────────────────
 
@@ -209,9 +208,9 @@ async function handleHostCommand(cmd: HostCommand): Promise<unknown> {
     case 'list_tabs': {
       const tabs = await chrome.tabs.query({})
       const infos: TabInfo[] = tabs
-        .filter((t) => t.id !== undefined)
+        .filter((t): t is chrome.tabs.Tab & { id: number } => t.id !== undefined)
         .map((t) => ({
-          tabId: t.id!,
+          tabId: t.id,
           windowId: t.windowId,
           url: t.url ?? '',
           title: t.title ?? '',
@@ -293,14 +292,15 @@ async function handleHostCommand(cmd: HostCommand): Promise<unknown> {
     // ── Evaluate JavaScript ───────────────────────────────────────────────────
     case 'evaluate': {
       try {
-        const evalTarget = cmd.frameId !== undefined
-          ? { tabId: cmd.tabId, frameIds: [cmd.frameId] }
-          : { tabId: cmd.tabId, allFrames: true as const }
+        const evalTarget =
+          cmd.frameId !== undefined
+            ? { tabId: cmd.tabId, frameIds: [cmd.frameId] }
+            : { tabId: cmd.tabId, allFrames: true as const }
         const results = await chrome.scripting.executeScript({
           target: evalTarget,
           func: (expr: string) => {
             try {
-              // biome-ignore lint/security/noEval: intentional evaluate tool
+              // biome-ignore lint/security/noGlobalEval: intentional evaluate tool
               return { success: true, value: eval(expr) } // eslint-disable-line no-eval
             } catch (e) {
               return { success: false, error: String(e) }
@@ -326,9 +326,10 @@ async function handleHostCommand(cmd: HostCommand): Promise<unknown> {
 
     // ── Find element ──────────────────────────────────────────────────────────
     case 'find_element': {
-      const target = cmd.frameId !== undefined
-        ? { tabId: cmd.tabId, frameIds: [cmd.frameId] }
-        : { tabId: cmd.tabId, allFrames: false }
+      const target =
+        cmd.frameId !== undefined
+          ? { tabId: cmd.tabId, frameIds: [cmd.frameId] }
+          : { tabId: cmd.tabId, allFrames: false }
 
       const results = await chrome.scripting.executeScript({
         target,
@@ -371,14 +372,14 @@ async function handleHostCommand(cmd: HostCommand): Promise<unknown> {
     case 'list_windows': {
       const windows = await chrome.windows.getAll({ populate: true })
       const infos: WindowInfo[] = windows.map((w) => ({
-        windowId: w.id!,
+        windowId: w.id ?? -1,
         type: w.type ?? 'normal',
         state: w.state ?? 'normal',
         focused: w.focused,
         tabs: (w.tabs ?? [])
-          .filter((t) => t.id !== undefined)
+          .filter((t): t is chrome.tabs.Tab & { id: number } => t.id !== undefined)
           .map((t) => ({
-            tabId: t.id!,
+            tabId: t.id,
             windowId: t.windowId,
             url: t.url ?? '',
             title: t.title ?? '',
@@ -452,8 +453,11 @@ async function collectSnapshot(tabId: number): Promise<unknown> {
     chrome.tabs.sendMessage(tabId, { kind: 'GET_SNAPSHOT' }, { frameId: 0 })
     for (const frame of frames ?? []) {
       if (frame.frameId === 0) continue
-      chrome.tabs.sendMessage(tabId, { kind: 'GET_SNAPSHOT' }, { frameId: frame.frameId })
-        .catch(() => { /* frame may not have content script */ })
+      chrome.tabs
+        .sendMessage(tabId, { kind: 'GET_SNAPSHOT' }, { frameId: frame.frameId })
+        .catch(() => {
+          /* frame may not have content script */
+        })
     }
   })
 }
@@ -482,7 +486,7 @@ function extractPageContent(selector?: string): string {
 
     if (/^h[1-6]$/.test(tag)) {
       const level = parseInt(tag[1], 10)
-      const prefix = '#'.repeat(level) + ' '
+      const prefix = `${'#'.repeat(level)} `
       return `\n${prefix}${el.textContent?.trim()}\n`
     }
 
@@ -502,19 +506,38 @@ function extractPageContent(selector?: string): string {
     if (tag === 'li') {
       const parent = el.parentElement?.tagName.toLowerCase()
       const prefix = parent === 'ol' ? '1. ' : '- '
-      const children = Array.from(node.childNodes).map((c) => processNode(c, 0)).filter(Boolean).join(' ')
+      const children = Array.from(node.childNodes)
+        .map((c) => processNode(c, 0))
+        .filter(Boolean)
+        .join(' ')
       return `\n${indent}${prefix}${children}`
     }
 
     if (tag === 'tr') {
-      const cells = Array.from(el.querySelectorAll('td, th')).map((c) => c.textContent?.trim() ?? '')
+      const cells = Array.from(el.querySelectorAll('td, th')).map(
+        (c) => c.textContent?.trim() ?? '',
+      )
       return `| ${cells.join(' | ')} |`
     }
 
-    const children = Array.from(node.childNodes).map((c) => processNode(c, depth)).filter(Boolean)
-    const blockTags = new Set(['div', 'p', 'section', 'article', 'main', 'header', 'footer', 'aside', 'table', 'ul', 'ol'])
+    const children = Array.from(node.childNodes)
+      .map((c) => processNode(c, depth))
+      .filter(Boolean)
+    const blockTags = new Set([
+      'div',
+      'p',
+      'section',
+      'article',
+      'main',
+      'header',
+      'footer',
+      'aside',
+      'table',
+      'ul',
+      'ol',
+    ])
     if (blockTags.has(tag)) {
-      return '\n' + children.join('\n') + '\n'
+      return `\n${children.join('\n')}\n`
     }
 
     return children.join('')
@@ -532,7 +555,8 @@ function extractPageLinks(): Array<{ text: string; href: string }> {
     const href = el.href
     if (!href || seen.has(href)) continue
     seen.add(href)
-    const text = el.innerText?.trim() || el.getAttribute('aria-label') || el.getAttribute('title') || ''
+    const text =
+      el.innerText?.trim() || el.getAttribute('aria-label') || el.getAttribute('title') || ''
     if (text || href) links.push({ text, href })
   }
 
@@ -590,25 +614,31 @@ chrome.runtime.onStartup.addListener(async () => {
 bridge.connect()
 
 // Handle messages from the side panel UI
-chrome.runtime.onMessage.addListener((msg: { kind: string; payload?: unknown }, _sender, sendResponse) => {
-  if (msg.kind === 'SIDEPANEL_TASK') {
-    // Forward task to native host
-    bridge.send('TASK_START', msg.payload)
-    sendResponse({ ok: true })
-    return true
-  }
+chrome.runtime.onMessage.addListener(
+  (msg: { kind: string; payload?: unknown }, _sender, sendResponse) => {
+    if (msg.kind === 'SIDEPANEL_TASK') {
+      // Forward task to native host
+      bridge.send('TASK_START', msg.payload)
+      sendResponse({ ok: true })
+      return true
+    }
 
-  if (msg.kind === 'SIDEPANEL_GET_TABS') {
-    chrome.tabs.query({}).then((tabs) => {
-      sendResponse({ tabs: tabs.filter((t) => t.id).map((t) => ({
-        tabId: t.id,
-        url: t.url,
-        title: t.title,
-        isActive: t.active,
-      })) })
-    })
-    return true
-  }
+    if (msg.kind === 'SIDEPANEL_GET_TABS') {
+      chrome.tabs.query({}).then((tabs) => {
+        sendResponse({
+          tabs: tabs
+            .filter((t) => t.id)
+            .map((t) => ({
+              tabId: t.id,
+              url: t.url,
+              title: t.title,
+              isActive: t.active,
+            })),
+        })
+      })
+      return true
+    }
 
-  return false
-})
+    return false
+  },
+)

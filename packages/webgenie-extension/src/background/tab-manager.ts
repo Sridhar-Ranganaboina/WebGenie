@@ -29,7 +29,10 @@ export class TabManager {
       isLoading: tab.status === 'loading',
       isPinned: tab.pinned,
       index: tab.index,
-      groupId: tab.groupId !== undefined && tab.groupId !== chrome.tabGroups?.TAB_GROUP_ID_NONE ? tab.groupId : undefined,
+      groupId:
+        tab.groupId !== undefined && tab.groupId !== chrome.tabGroups?.TAB_GROUP_ID_NONE
+          ? tab.groupId
+          : undefined,
     })
   }
 
@@ -72,7 +75,13 @@ export class TabManager {
     if (entry) {
       entry.snapshot = snapshot
     } else {
-      this.frames.set(key, { frameId, tabId, url: snapshot.frameUrl, parentFrameId: null, snapshot })
+      this.frames.set(key, {
+        frameId,
+        tabId,
+        url: snapshot.frameUrl,
+        parentFrameId: null,
+        snapshot,
+      })
     }
   }
 
@@ -91,13 +100,13 @@ export class TabManager {
   buildPageSnapshot(tabId: number): PageSnapshot | null {
     const tab = this.tabs.get(tabId)
     const frames = this.getFramesForTab(tabId)
-    const populated = frames.filter((f) => f.snapshot !== null)
+    const populated = frames.filter((f): f is FrameEntry & { snapshot: FrameSnapshot } => f.snapshot !== null)
 
     return {
       tabId,
       url: tab?.url ?? '',
       title: tab?.title ?? '',
-      frames: populated.map((f) => f.snapshot!),
+      frames: populated.map((f) => f.snapshot),
       timestamp: Date.now(),
     }
   }

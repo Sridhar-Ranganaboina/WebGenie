@@ -4,7 +4,7 @@
  */
 
 import type { AgentAction, BackgroundToContent } from '../types/messages'
-import { TabManager } from './tab-manager'
+import type { TabManager } from './tab-manager'
 import { randomId, sleep } from './utils'
 
 export interface ExecuteOptions {
@@ -21,8 +21,10 @@ export interface ExecuteResult {
 }
 
 export class ActionExecutor {
-  private tabManager: TabManager
-  private pending = new Map<string, { resolve: (r: ExecuteResult) => void; reject: (e: Error) => void }>()
+  private pending = new Map<
+    string,
+    { resolve: (r: ExecuteResult) => void; reject: (e: Error) => void }
+  >()
 
   constructor(tabManager: TabManager) {
     this.tabManager = tabManager
@@ -54,8 +56,14 @@ export class ActionExecutor {
       }, timeoutMs)
 
       this.pending.set(actionId, {
-        resolve: (r) => { clearTimeout(timer); resolve(r) },
-        reject: (e) => { clearTimeout(timer); reject(e) },
+        resolve: (r) => {
+          clearTimeout(timer)
+          resolve(r)
+        },
+        reject: (e) => {
+          clearTimeout(timer)
+          reject(e)
+        },
       })
 
       // Send to the specific frame, or all frames in the tab
@@ -92,7 +100,10 @@ export class ActionExecutor {
     return { success: false, error: `Condition "${condition.type}" not met within ${timeoutMs}ms` }
   }
 
-  private async checkCondition(tabId: number, condition: { type: string; [key: string]: unknown }): Promise<boolean> {
+  private async checkCondition(
+    tabId: number,
+    condition: { type: string; [key: string]: unknown },
+  ): Promise<boolean> {
     switch (condition.type) {
       case 'url_contains': {
         const tab = await chrome.tabs.get(tabId)

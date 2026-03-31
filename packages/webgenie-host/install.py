@@ -128,6 +128,7 @@ def _install_windows(manifest_json: str, filename: str) -> None:
         print(f"✅ Manifest written: {tmp}")
     except Exception as e:
         print(f"❌ Failed to write registry: {e}")
+        raise
 
 
 def uninstall(browser: str = "all") -> None:
